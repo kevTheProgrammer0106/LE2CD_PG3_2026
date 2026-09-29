@@ -3,5 +3,8 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="LE2C_PG3プロジェクト.vcxproj" />
+  <Folder Name="/ソリューション項目/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Project Path="LE2C_PG3プロジェクト.vcxproj" Id="064084f4-857c-4c96-9ba2-73b2a6402c6a" />
 </Solution>
