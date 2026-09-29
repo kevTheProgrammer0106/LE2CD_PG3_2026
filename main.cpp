@@ -1,33 +1,36 @@
 #include <stdio.h>
-#include <list>
-#include <algorithm>
-#include <string>
-#include <vector>
 
 using namespace std;
 
+template<typename Type>
+Type Min(Type a, Type b)
+{
+	return static_cast< Type >( a < b ? a : b );
+}
+
 int main()
 {
-	vector<string> emails = {
-		"k024g1017@g.neec.ac.jp", "k024g0033@g.neec.ac.jp", "k024g0057@g.neec.ac.jp", "k024g0020@g.neec.ac.jp",
-		"k024g0109@g.neec.ac.jp", "k024g1031@g.neec.ac.jp", "k024g0004@g.neec.ac.jp", "k024g0027@g.neec.ac.jp", 
-		"k024g0058@g.neec.ac.jp", "k022g0113@g.neec.ac.jp", "k024g0007@g.neec.ac.jp", "k024g0083@g.neec.ac.jp",
-		"k024g0110@g.neec.ac.jp", "k024g0066@g.neec.ac.jp", "k023g0029@g.neec.ac.jp", "k024g1030@g.neec.ac.jp",
-		"k024g0106@g.neec.ac.jp", "k024g0089@g.neec.ac.jp", "k024g0101@g.neec.ac.jp", "k024g0035@g.neec.ac.jp",
-		"k024g1025@g.neec.ac.jp", "k024g0059@g.neec.ac.jp", "k024g0006@g.neec.ac.jp", "k023g0122@g.neec.ac.jp",
-		"k024g0028@g.neec.ac.jp", "k024g1024@g.neec.ac.jp", "k024g0108@g.neec.ac.jp", "k024g0061@g.neec.ac.jp",
-		"k024g0104@g.neec.ac.jp", "k024g0038@g.neec.ac.jp","k024g0032@g.neec.ac.jp", "k024g0026@g.neec.ac.jp",
-		"k024g0001@g.neec.ac.jp", "k024g0009@g.neec.ac.jp","k024g0112@g.neec.ac.jp", "k024g0011@g.neec.ac.jp",
-		"k024g0085@g.neec.ac.jp", "k024g0111@g.neec.ac.jp", "k024g0045@g.neec.ac.jp", "k024g0103@g.neec.ac.jp",
-		"k024g1002@g.neec.ac.jp", "k024g0078@g.neec.ac.jp", "k024g0044@g.neec.ac.jp","k024g0008@g.neec.ac.jp",
-		"k024g0075@g.neec.ac.jp", "k024g0091@g.neec.ac.jp", "k024g0064@g.neec.ac.jp", "k024g0051@g.neec.ac.jp",
-		"k024g0093@g.neec.ac.jp", "k024g0024@g.neec.ac.jp",
-	};
+	int intValue1 = 34;
+	int intValue2 = 54;
 
-	sort(emails.begin(), emails.end());
-	for ( auto email : emails )
-	{
-		printf("%s\n", email.c_str());
-	}
+	float floatValue1 = 6.5f;
+	float floatValue2 = 2.5f;
+
+	double doubleValue1 = 3.14;
+	double doubleValue2 = 21.71;
+
+	int a = Min<int>(intValue1, intValue2);
+	float b = Min<float>(floatValue1, floatValue2);
+	double c = Min<double>(doubleValue1, doubleValue2);
+
+	printf("Min of %d and %d is:", intValue1, intValue2);
+	printf(" %d\n", a);
+
+	printf("Min of %f and %f is:", floatValue1, floatValue2);
+	printf(" %f\n", b);
+
+	printf("Min of %f and %f is:", doubleValue1, doubleValue2);
+	printf(" %f\n", c);
+
 	return 0;
 }
