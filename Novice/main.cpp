@@ -51,18 +51,23 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// ライブラリの初期化
 	Novice::Initialize(kWindowTitle, 1280, 720);
+	
+	Vector2 targetPosition = {0.0f, 0.0f};
+	float targetRadius = 12.0f;
+	uint32_t targetColor = RED;
 
-	// カメラの球面座標
-	Spherical spherical{6.0f, 0.0f, -std::numbers::pi_v<float> / 2.0f};
+	Vector2 interpolationPosition = {640.0f, 360.0f};
+	float interpolationRadius = 20.0f;
+	uint32_t interpolationColor = GREEN;
 
-	// 球面座標からカメラ位置を作る
-	Vector3 cameraPosition = ToCartesian(spherical);
+	int mousePosX = 0;
+	int mousePosY = 0;
 
-	// 注視点
-	Vector3 target = {0.0f, 0.0f, 0.0f};
+	float speed = 1.0f;
 
-	// ワールド上方向
-	Vector3 worldUp = {0.0f, 1.0f, 0.0f};
+	float framesPerSecond = 60.0f;
+	// deltatTime秒での追従割合tを計算
+	float deltaTime = 1.0f / framesPerSecond;
 
 	// キー入力結果を受け取る箱
 	char keys[256] = {0};
@@ -82,132 +87,38 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		/// ↓更新処理ここから
 		///
 
-		// 球面座標からカメラ位置を再計算する
-		cameraPosition = ToCartesian(spherical);
-		// ターゲットからカメラへの前方向ベクトルを作る
-		Vector3 forward = Normalize(target - cameraPosition);
+		Novice::GetMousePosition(&mousePosX, &mousePosY);
+		targetPosition = {static_cast<float>(mousePosX), static_cast<float>(mousePosY)};
+		interpolationPosition += {
+		    (speed * deltaTime) * (targetPosition.x - interpolationPosition.x),
+		    (speed * deltaTime) * (targetPosition.y - interpolationPosition.y),
+		};
+		float distanceToTarget = Length({targetPosition.x - interpolationPosition.x, targetPosition.y - interpolationPosition.y, 0.0f});
 
-		// 上方向と前方向から右方向を求める
-		Vector3 right = Normalize(Cross(worldUp, forward));
-
-		// 前方向と右方向からカメラの上方向を求める
-		Vector3 up = Cross(forward, right);
-
-		// カメラ行列を作成
-		Matrix4x4 cameraMatrix{
-		    {
-             {right.x, right.y, right.z, 0.0f},
-             {up.x, up.y, up.z, 0.0f},
-             {forward.x, forward.y, forward.z, 0.0f},
-             {cameraPosition.x, cameraPosition.y, cameraPosition.z, 1.0f},
-		     }
-        };
-
-#ifdef USE_IMGUI
-		ImGui::Begin("Spherical Coordinates");
-
-		ImGui::Text("Target: (%f, %f, %f) / +Y up / Camera +Z forward", target.x, target.y, target.z);
-
-		ImGui::Spacing();
-
-		// rを変更
-		ImGui::Text("%f", spherical.radius);
-		ImGui::SameLine();
-		ImGui::Text("Radius");
-		ImGui::SameLine();
-
-		if (ImGui::Button("-##RadiusMinus")) {
-			spherical.radius = std::max(0.1f, spherical.radius - 0.1f);
-		}
-
-		ImGui::SameLine();
-
-		if (ImGui::Button("+##RadiusPlus")) {
-			spherical.radius += 0.1f;
-		}
-
-		ImGui::Spacing();
-
-		// thetaを変更
-		ImGui::Text("%f", spherical.theta);
-		ImGui::SameLine();
-		ImGui::Text("Theta: elevation");
-		ImGui::SameLine();
-
-		if (ImGui::Button("-##ThetaMinus")) {
-			spherical.theta -= 0.1f;
-		}
-
-		ImGui::SameLine();
-
-		if (ImGui::Button("+##ThetaPlus")) {
-			spherical.theta += 0.1f;
-		}
-
-		ImGui::Spacing();
-
-		// phiを変更
-		ImGui::Text("%f", spherical.phi);
-		ImGui::SameLine();
-		ImGui::Text("Phi: horizontal");
-		ImGui::SameLine();
-
-		if (ImGui::Button("-##PhiMinus")) {
-			spherical.phi -= 0.1f;
-		}
-
-		ImGui::SameLine();
-
-		if (ImGui::Button("+##PhiPlus")) {
-			spherical.phi += 0.1f;
-		}
-
-		ImGui::Spacing();
+		ImGui::Begin("Interpolation Controller");
+		ImGui::Text("Target: Mouse Position (Red Circle)");
+		
 		ImGui::Separator();
-		ImGui::Spacing();
 
-		ImGui::Text("=== Spherical Coordinates ===");
+		ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "[Linear Interpolation - Student Mode]");
+		ImGui::DragFloat("Speed", &speed, 0.01f);
+		ImGui::Text("Mouse Pos: (%.2f, %.2f)", static_cast<float>(mousePosX), static_cast<float>(mousePosY));
+		ImGui::Text("Interpolation Position: (%.2f, %.2f)", targetPosition.x, targetPosition.y);
+		ImGui::Text("Distance to target: %.2f px", distanceToTarget);
 
-		ImGui::Text("r = %f", spherical.radius);
-		ImGui::SameLine();
-
-		ImGui::Text("theta = %f rad", spherical.theta);
-		ImGui::SameLine();
-
-		ImGui::Text("phi = %f rad", spherical.phi);
-
-		ImGui::Spacing();
-
-		ImGui::Text("=== Cartesian Coordinates ===");
-
-		ImGui::Text("x = %f", cameraPosition.x);
-		ImGui::SameLine();
-
-		ImGui::Text("y = %f", cameraPosition.y);
-		ImGui::SameLine();
-
-		ImGui::Text("z = %f", cameraPosition.z);
-
-		ImGui::Text("cameraPosition = (%f, %f, %f)", cameraPosition.x, cameraPosition.y, cameraPosition.z);
-
-		ImGui::Spacing();
 		ImGui::Separator();
-		ImGui::Spacing();
 
-		// カメラ行列を表示
-		ImGui::Text("=== Camera Matrix ===");
+		ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[Teacher Comparison Option]");
+		/*ImGui::Checkbox("Show Exponetial Decay");*/
+		if (ImGui::Button("Snap To Target")) {
+			interpolationPosition = targetPosition;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Reset To Center")) {
+			interpolationPosition = {640.0f, 360.0f};
+		}
 
-		ImGui::Text("[ %f  %f  %f  %f ]", cameraMatrix.m[0][0], cameraMatrix.m[0][1], cameraMatrix.m[0][2], cameraMatrix.m[0][3]);
 
-		ImGui::Text("[ %f  %f  %f  %f ]", cameraMatrix.m[1][0], cameraMatrix.m[1][1], cameraMatrix.m[1][2], cameraMatrix.m[1][3]);
-
-		ImGui::Text("[ %f  %f  %f  %f ]", cameraMatrix.m[2][0], cameraMatrix.m[2][1], cameraMatrix.m[2][2], cameraMatrix.m[2][3]);
-
-		ImGui::Text("[ %f  %f  %f  %f ]", cameraMatrix.m[3][0], cameraMatrix.m[3][1], cameraMatrix.m[3][2], cameraMatrix.m[3][3]);
-
-		ImGui::Spacing();
-		ImGui::End();
-#endif // USE_IMGUI
 
 		///
 		/// ↑更新処理ここまで
@@ -216,6 +127,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		///
 		/// ↓描画処理ここから
 		///
+		
+		Novice::DrawEllipse(static_cast<int>(interpolationPosition.x), static_cast<int>(interpolationPosition.y), static_cast<int>(interpolationRadius), static_cast<int>(interpolationRadius), 0.0f,interpolationColor, kFillModeSolid);
+		Novice::DrawEllipse(static_cast<int>(targetPosition.x), static_cast<int>(targetPosition.y), static_cast<int>(targetRadius), static_cast<int>(targetRadius), 0.0f, targetColor, kFillModeSolid);
 
 		///
 		/// ↑描画処理ここまで
