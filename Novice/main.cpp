@@ -44,6 +44,58 @@ Spherical ToSpherical(const Vector3& p) {
 	return {r, std::asin(sinTheta), phi};
 }
 
+struct Quaternion {
+	float x;
+	float y;
+	float z;
+	float w;
+};
+
+// Quaternionの積
+Quaternion Multiply(const Quaternion& q1, const Quaternion& q2) {
+	return {
+	    q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y,
+	    q1.w * q2.y - q1.x * q2.z + q1.y * q2.w + q1.z * q2.x,
+	    q1.w * q2.z + q1.x * q2.y - q1.y * q2.x + q1.z * q2.w,
+	    q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z,
+	};
+}
+
+ // Quaternionの共役
+Quaternion Conjugate(const Quaternion& q) { return {-q.x, -q.y, -q.z, q.w}; }
+
+// Quaternionの単位元を返す
+Quaternion IdentityQuaternion() { return {0.0f, 0.0f, 0.0f, 1.0f}; }
+
+// Quaternionのノルム（大きさ）を返す
+float Norm(const Quaternion& quaternion) { return std::sqrt(quaternion.x * quaternion.x + quaternion.y * quaternion.y + quaternion.z * quaternion.z + quaternion.w * quaternion.w); }
+
+// Quaternionを正規化する
+Quaternion Normalize(const Quaternion& quaternion) {
+	float norm = Norm(quaternion);
+
+	// ゼロ除算を防ぐ
+	if (norm == 0.0f) {
+		return IdentityQuaternion();
+	}
+
+	return {quaternion.x / norm, quaternion.y / norm, quaternion.z / norm, quaternion.w / norm};
+}
+
+// Quaternionの逆元を返す
+Quaternion Inverse(const Quaternion& quaternion) {
+	float normSquared = quaternion.x * quaternion.x + quaternion.y * quaternion.y + quaternion.z * quaternion.z + quaternion.w * quaternion.w;
+
+	// ゼロQuaternionには逆元が存在しない
+	if (normSquared == 0.0f) {
+		return {0.0f, 0.0f, 0.0f, 0.0f};
+	}
+
+	Quaternion conjugate = Conjugate(quaternion);
+
+	return {conjugate.x / normSquared, conjugate.y / normSquared, conjugate.z / normSquared, conjugate.w / normSquared};
+}
+
 const char kWindowTitle[] = "LE2C_29_メンドーザ_ケビン_ラルフ_パレルモ";
 
 // Windowsアプリでのエントリーポイント(main関数)
@@ -52,6 +104,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// ライブラリの初期化
 	Novice::Initialize(kWindowTitle, 1280, 720);
 	
+	// MT4_00_02
+
 	Vector2 targetPosition = {0.0f, 0.0f};
 	float targetRadius = 12.0f;
 	uint32_t targetColor = RED;
@@ -68,6 +122,19 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	float framesPerSecond = 60.0f;
 	// deltatTime秒での追従割合tを計算
 	float deltaTime = 1.0f / framesPerSecond;
+
+	// MT4_01_00
+
+	Quaternion q1 = {2.0f, 3.0f, 4.0f, 1.0f};
+	Quaternion q2 = {1.0f, 3.0f, 5.0f, 2.0f};
+
+	Quaternion identity = IdentityQuaternion();
+	Quaternion conj = Conjugate(q1);
+	Quaternion inv = Inverse(q1);
+	Quaternion normal = Normalize(q1);
+	Quaternion mul1 = Multiply(q1, q2);
+	Quaternion mul2 = Multiply(q2, q1);
+	float norm = Norm(q1);
 
 	// キー入力結果を受け取る箱
 	char keys[256] = {0};
@@ -128,6 +195,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		/// ↓描画処理ここから
 		///
 		
+		Novice::ScreenPrintf(0, 0, " %.2f, %.2f, %.2f, %.2f. q1", q1.x, q1.y, q1.z, q1.w);
+		Novice::ScreenPrintf(0, 20, " %.2f, %.2f, %.2f, %.2f. q2", q2.x, q2.y, q2.z, q2.w);
+		Novice::ScreenPrintf(0, 40, " %.2f, %.2f, %.2f, %.2f. IdentityQuaternion", identity.x, identity.y, identity.z, identity.w);
+		Novice::ScreenPrintf(0, 60, " %.2f, %.2f, %.2f, %.2f. Conjugate", conj.x, conj.y, conj.z, conj.w);
+		Novice::ScreenPrintf(0, 80, " %.2f, %.2f, %.2f, %.2f. Inverse", inv.x, inv.y, inv.z, inv.w);
+		Novice::ScreenPrintf(0, 100, " %.2f, %.2f, %.2f, %.2f. Normalize", normal.x, normal.y, normal.z, normal.w);
+		Novice::ScreenPrintf(0, 120, " %.2f, %.2f, %.2f, %.2f. Multiply(q1, q2)", mul1.x, mul1.y, mul1.z, mul1.w);
+		Novice::ScreenPrintf(0, 140, " %.2f, %.2f, %.2f, %.2f. Multiply(q2, q1)", mul2.x, mul2.y, mul2.z, mul2.w);
+		Novice::ScreenPrintf(0, 160, " %.2f. Norm", norm);
+
 		Novice::DrawEllipse(static_cast<int>(interpolationPosition.x), static_cast<int>(interpolationPosition.y), static_cast<int>(interpolationRadius), static_cast<int>(interpolationRadius), 0.0f,interpolationColor, kFillModeSolid);
 		Novice::DrawEllipse(static_cast<int>(targetPosition.x), static_cast<int>(targetPosition.y), static_cast<int>(targetRadius), static_cast<int>(targetRadius), 0.0f, targetColor, kFillModeSolid);
 
