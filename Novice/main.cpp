@@ -136,6 +136,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	Quaternion mul2 = Multiply(q2, q1);
 	float norm = Norm(q1);
 
+	bool checkExpotenialDecay = false;
+
 	// キー入力結果を受け取る箱
 	char keys[256] = {0};
 	char preKeys[256] = {0};
@@ -168,15 +170,15 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		ImGui::Separator();
 
 		ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "[Linear Interpolation - Student Mode]");
-		ImGui::DragFloat("Speed", &speed, 0.01f);
+		ImGui::SliderFloat("Speed", &speed,  0.0f, 100.0f, "%.2f");
 		ImGui::Text("Mouse Pos: (%.2f, %.2f)", static_cast<float>(mousePosX), static_cast<float>(mousePosY));
-		ImGui::Text("Interpolation Position: (%.2f, %.2f)", targetPosition.x, targetPosition.y);
+		ImGui::Text("Interpolation Position: (%.2f, %.2f)", interpolationPosition.x, interpolationPosition.y);
 		ImGui::Text("Distance to target: %.2f px", distanceToTarget);
 
 		ImGui::Separator();
 
 		ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[Teacher Comparison Option]");
-		/*ImGui::Checkbox("Show Exponetial Decay");*/
+		ImGui::Checkbox("Show Exponetial Decay", &checkExpotenialDecay);
 		if (ImGui::Button("Snap To Target")) {
 			interpolationPosition = targetPosition;
 		}
@@ -207,6 +209,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 		Novice::DrawEllipse(static_cast<int>(interpolationPosition.x), static_cast<int>(interpolationPosition.y), static_cast<int>(interpolationRadius), static_cast<int>(interpolationRadius), 0.0f,interpolationColor, kFillModeSolid);
 		Novice::DrawEllipse(static_cast<int>(targetPosition.x), static_cast<int>(targetPosition.y), static_cast<int>(targetRadius), static_cast<int>(targetRadius), 0.0f, targetColor, kFillModeSolid);
+		if (checkExpotenialDecay)
+		{
+			Novice::DrawLine(static_cast<int>(interpolationPosition.x), static_cast<int>(interpolationPosition.y), static_cast<int>(targetPosition.x), static_cast<int>(targetPosition.y), WHITE);
+		}		
 
 		///
 		/// ↑描画処理ここまで
