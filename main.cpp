@@ -1,28 +1,52 @@
 #include <stdio.h>
 #include <Windows.h>
+#include <stdlib.h>
+#include <time.h>
 
-typedef void ( *PFunc )( int* );
 
-// コールバック関数
-void DispResult(int* s)
+void DelayReveal(void ( *fn )( int, int ), unsigned int delayMs, int roll, int userGuess)
 {
-	printf("%d seconds waited before execution\n", *s);
-}
-
-void SetTimeout(PFunc p, int second)
-{
+	Sleep(delayMs);
 	//コールバック関数を呼び出す
-	Sleep(second * 1000);
-	p(&second);
+	fn(roll, userGuess);
+}
+void ShowResult(int roll, int userGuess)
+{
+	if ( roll % 2 == 1 )
+	{
+		printf("Face %d is odd number\n", roll);
+	} else if ( roll % 2 == 0 )
+	{
+		printf("Face %d is even number\n", roll);
+	}
+
+	if ( (userGuess == 0 && roll % 2 == 0) || (userGuess == 1 && roll % 2 == 1) )
+	{
+		printf("correct");
+	} else {
+		printf("incorrect");
+	}
 }
 
 int main()
 {
-	printf("start\n");
-
-	PFunc p;
-	p = DispResult;
-	SetTimeout(p, 5);
+	srand(( unsigned ) time(NULL));
+	int userInput = -1;
+	while (userInput != 0 && userInput != 1)
+	{
+		printf("Pick a number from 0 to 1: ");
+		scanf_s("%d", &userInput);
+		if (userInput != 0 && userInput != 1 )
+		{
+			printf("Invalid.\n");
+		} else
+		{
+			printf("Results In.\n");
+			break;
+		}
+	}
+	int roll = rand() % 6 + 1;
+	DelayReveal(ShowResult, 3000, roll, userInput);
 
 	return 0;
 }
