@@ -96,6 +96,83 @@ Quaternion Inverse(const Quaternion& quaternion) {
 	return {conjugate.x / normSquared, conjugate.y / normSquared, conjugate.z / normSquared, conjugate.w / normSquared};
 }
 
+//MT4_01_01
+//  任意軸回転を表す Quaternionの生成
+Quaternion MakeRotateAxisAngleQuaternion(const Vector3& axis, float angle) {
+	// 回転軸の長さを求める
+	float length = std::sqrt(axis.x * axis.x + axis.y * axis.y + axis.z * axis.z);
+
+	// 回転軸がゼロベクトルなら単位Quaternionを返す
+	if (length == 0.0f) {
+		return IdentityQuaternion();
+	}
+
+	// 回転軸を正規化する
+	Vector3 normalizedAxis = {axis.x / length, axis.y / length, axis.z / length};
+
+	float halfAngle = angle * 0.5f;
+	float sinHalfAngle = std::sin(halfAngle);
+
+	return {normalizedAxis.x * sinHalfAngle, normalizedAxis.y * sinHalfAngle, normalizedAxis.z * sinHalfAngle, std::cos(halfAngle)};
+}
+
+// ベクトルをQuaternionで回転させた結果のベクトルを求める
+Vector3 RotateVector(const Vector3& vector, const Quaternion& quaternion) {
+	// Quaternionを正規化して回転量を整える
+	Quaternion q = Normalize(quaternion);
+
+	// ベクトルをQuaternionに変換する
+	Quaternion p = {vector.x, vector.y, vector.z, 0.0f};
+
+	// q * p * qの共役でベクトルを回転させる
+	Quaternion result = Multiply(Multiply(q, p), Conjugate(q));
+
+	return {result.x, result.y, result.z};
+}
+
+// Quaternionから回転行列を求める
+Matrix4x4 MakeRotateMatrix(const Quaternion& quaternion) {
+	// Quaternionを正規化する
+	Quaternion q = Normalize(quaternion);
+
+	float x = q.x;
+	float y = q.y;
+	float z = q.z;
+	float w = q.w;
+
+	Matrix4x4 result{};
+
+	// Quaternionから回転行列を計算する
+	result.m[0][0] = 1.0f - 2.0f * (y * y + z * z);
+	result.m[0][1] = 2.0f * (x * y + z * w);
+	result.m[0][2] = 2.0f * (x * z - y * w);
+	result.m[0][3] = 0.0f;
+
+	result.m[1][0] = 2.0f * (x * y - z * w);
+	result.m[1][1] = 1.0f - 2.0f * (x * x + z * z);
+	result.m[1][2] = 2.0f * (y * z + x * w);
+	result.m[1][3] = 0.0f;
+
+	result.m[2][0] = 2.0f * (x * z + y * w);
+	result.m[2][1] = 2.0f * (y * z - x * w);
+	result.m[2][2] = 1.0f - 2.0f * (x * x + y * y);
+	result.m[2][3] = 0.0f;
+
+	result.m[3][0] = 0.0f;
+	result.m[3][1] = 0.0f;
+	result.m[3][2] = 0.0f;
+	result.m[3][3] = 1.0f;
+
+	return result;
+}
+void QuaternionScreenPrint(int x, int y, const Quaternion& quaternion, const char* label) {
+	Novice::ScreenPrintf(x, y, "%.2f", quaternion.x);
+	Novice::ScreenPrintf(x + kColumnWidth, y, "%.2f", quaternion.y);
+	Novice::ScreenPrintf(x + kColumnWidth * 2, y, "%.2f", quaternion.z);
+	Novice::ScreenPrintf(x + kColumnWidth * 3, y, "%.2f", quaternion.w);
+	Novice::ScreenPrintf(x + kColumnWidth * 5, y, "%s", label);
+}
+
 const char kWindowTitle[] = "LE2C_29_メンドーザ_ケビン_ラルフ_パレルモ";
 
 // Windowsアプリでのエントリーポイント(main関数)
@@ -104,40 +181,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// ライブラリの初期化
 	Novice::Initialize(kWindowTitle, 1280, 720);
 	
-	// MT4_00_02
-
-	Vector2 targetPosition = {0.0f, 0.0f};
-	float targetRadius = 12.0f;
-	uint32_t targetColor = RED;
-
-	Vector2 interpolationPosition = {640.0f, 360.0f};
-	float interpolationRadius = 20.0f;
-	uint32_t interpolationColor = GREEN;
-
-	int mousePosX = 0;
-	int mousePosY = 0;
-
-	float speed = 1.0f;
-
-	float framesPerSecond = 60.0f;
-	// deltatTime秒での追従割合tを計算
-	float deltaTime = 1.0f / framesPerSecond;
-
-	// MT4_01_00
-
-	Quaternion q1 = {2.0f, 3.0f, 4.0f, 1.0f};
-	Quaternion q2 = {1.0f, 3.0f, 5.0f, 2.0f};
-
-	Quaternion identity = IdentityQuaternion();
-	Quaternion conj = Conjugate(q1);
-	Quaternion inv = Inverse(q1);
-	Quaternion normal = Normalize(q1);
-	Quaternion mul1 = Multiply(q1, q2);
-	Quaternion mul2 = Multiply(q2, q1);
-	float norm = Norm(q1);
-
-	bool checkExpotenialDecay = false;
-
 	// キー入力結果を受け取る箱
 	char keys[256] = {0};
 	char preKeys[256] = {0};
@@ -147,7 +190,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 		// フレームの開始
 		Novice::BeginFrame();
-
 		// キー入力を受け取る
 		memcpy(preKeys, keys, 256);
 		Novice::GetHitKeyStateAll(keys);
@@ -156,38 +198,11 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		/// ↓更新処理ここから
 		///
 
-		Novice::GetMousePosition(&mousePosX, &mousePosY);
-		targetPosition = {static_cast<float>(mousePosX), static_cast<float>(mousePosY)};
-		interpolationPosition += {
-		    (speed * deltaTime) * (targetPosition.x - interpolationPosition.x),
-		    (speed * deltaTime) * (targetPosition.y - interpolationPosition.y),
-		};
-		float distanceToTarget = Length({targetPosition.x - interpolationPosition.x, targetPosition.y - interpolationPosition.y, 0.0f});
-
-		ImGui::Begin("Interpolation Controller");
-		ImGui::Text("Target: Mouse Position (Red Circle)");
-		
-		ImGui::Separator();
-
-		ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "[Linear Interpolation - Student Mode]");
-		ImGui::SliderFloat("Speed", &speed,  0.0f, 100.0f, "%.2f");
-		ImGui::Text("Mouse Pos: (%.2f, %.2f)", static_cast<float>(mousePosX), static_cast<float>(mousePosY));
-		ImGui::Text("Interpolation Position: (%.2f, %.2f)", interpolationPosition.x, interpolationPosition.y);
-		ImGui::Text("Distance to target: %.2f px", distanceToTarget);
-
-		ImGui::Separator();
-
-		ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[Teacher Comparison Option]");
-		ImGui::Checkbox("Show Exponetial Decay", &checkExpotenialDecay);
-		if (ImGui::Button("Snap To Target")) {
-			interpolationPosition = targetPosition;
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Reset To Center")) {
-			interpolationPosition = {640.0f, 360.0f};
-		}
-
-
+		Quaternion rotation = MakeRotateAxisAngleQuaternion(Normalize(Vector3{1.0f, 0.4f, -0.2f}), 0.45f);
+		Vector3 pointY = {2.1f, -0.9f, 1.3f};
+		Matrix4x4 rotateMatrix = MakeRotateMatrix(rotation);
+		Vector3 rotateByQuaternion = RotateVector(pointY, rotation);
+		Vector3 rotateByMatrix = Transform(pointY, rotateMatrix);
 
 		///
 		/// ↑更新処理ここまで
@@ -196,23 +211,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		///
 		/// ↓描画処理ここから
 		///
-		
-		Novice::ScreenPrintf(0, 0, " %.2f, %.2f, %.2f, %.2f. q1", q1.x, q1.y, q1.z, q1.w);
-		Novice::ScreenPrintf(0, 20, " %.2f, %.2f, %.2f, %.2f. q2", q2.x, q2.y, q2.z, q2.w);
-		Novice::ScreenPrintf(0, 40, " %.2f, %.2f, %.2f, %.2f. IdentityQuaternion", identity.x, identity.y, identity.z, identity.w);
-		Novice::ScreenPrintf(0, 60, " %.2f, %.2f, %.2f, %.2f. Conjugate", conj.x, conj.y, conj.z, conj.w);
-		Novice::ScreenPrintf(0, 80, " %.2f, %.2f, %.2f, %.2f. Inverse", inv.x, inv.y, inv.z, inv.w);
-		Novice::ScreenPrintf(0, 100, " %.2f, %.2f, %.2f, %.2f. Normalize", normal.x, normal.y, normal.z, normal.w);
-		Novice::ScreenPrintf(0, 120, " %.2f, %.2f, %.2f, %.2f. Multiply(q1, q2)", mul1.x, mul1.y, mul1.z, mul1.w);
-		Novice::ScreenPrintf(0, 140, " %.2f, %.2f, %.2f, %.2f. Multiply(q2, q1)", mul2.x, mul2.y, mul2.z, mul2.w);
-		Novice::ScreenPrintf(0, 160, " %.2f. Norm", norm);
 
-		Novice::DrawEllipse(static_cast<int>(interpolationPosition.x), static_cast<int>(interpolationPosition.y), static_cast<int>(interpolationRadius), static_cast<int>(interpolationRadius), 0.0f,interpolationColor, kFillModeSolid);
-		Novice::DrawEllipse(static_cast<int>(targetPosition.x), static_cast<int>(targetPosition.y), static_cast<int>(targetRadius), static_cast<int>(targetRadius), 0.0f, targetColor, kFillModeSolid);
-		if (checkExpotenialDecay)
-		{
-			Novice::DrawLine(static_cast<int>(interpolationPosition.x), static_cast<int>(interpolationPosition.y), static_cast<int>(targetPosition.x), static_cast<int>(targetPosition.y), WHITE);
-		}		
+		QuaternionScreenPrint(0, kRowHeight * 0, rotation, " : rotation");
+		MatrixScreenPrint(0, kRowHeight * 1, rotateMatrix, "rotateMatrix");
+		VectorScreenPrint(0, kRowHeight * 6, rotateByQuaternion, " : rotateByQuaternion");
+		VectorScreenPrint(0, kRowHeight * 7, rotateByMatrix, " : rotateByMatrix");
+
 
 		///
 		/// ↑描画処理ここまで

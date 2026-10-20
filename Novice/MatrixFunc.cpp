@@ -267,16 +267,16 @@ Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height, f
 void MatrixScreenPrint(int x, int y, const Matrix4x4& matrix, const char* label) {
 	for (int i = 0; i < 4; ++i) {
 		for (int j = 0; j < 4; ++j) {
-			Novice::ScreenPrintf(x + kColumnWidth * j, y + kRowHeight * i, "%.02f", matrix.m[i][j]);
+			Novice::ScreenPrintf(x + kColumnWidth * j, y + kRowHeight * i, "%.3f", matrix.m[i][j]);
 		}
 	}
 	Novice::ScreenPrintf(x + kColumnWidth * 5, y, "%s", label);
 }
 
 void VectorScreenPrint(int x, int y, const Vector3& vector, const char* label) {
-	Novice::ScreenPrintf(x, y, "%.02f", vector.x);
-	Novice::ScreenPrintf(x + kColumnWidth, y, "%.02f", vector.y);
-	Novice::ScreenPrintf(x + kColumnWidth * 2, y, "%.02f", vector.z);
+	Novice::ScreenPrintf(x, y, "%.2f", vector.x);
+	Novice::ScreenPrintf(x + kColumnWidth, y, "%.2f", vector.y);
+	Novice::ScreenPrintf(x + kColumnWidth * 2, y, "%.2f", vector.z);
 	Novice::ScreenPrintf(x + kColumnWidth * 3, y, "%s", label);
 }
 
