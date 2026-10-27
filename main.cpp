@@ -1,33 +1,63 @@
 #include <stdio.h>
-#include <iostream.>
 #include <Windows.h>
 #include <stdlib.h>
 #include <time.h>
 
-int Recursive(int salary, int hour, int fixedSalary)
+void DelayReveal(void ( *fn )( int, int ), unsigned int delayMs, int roll, int userGuess)
 {
-	if ( salary >= fixedSalary )
-	{
-		printf("%d時間を満たした\n", hour);
-		return hour;
-	}
+    Sleep(delayMs);
 
-	printf("%d %d\n", salary, fixedSalary);
-
-	salary = salary * 2 - 50;
-
-	return Recursive(salary, hour + 1, fixedSalary + 1226);
+    // コールバック関数を呼び出す
+    fn(roll, userGuess);
 }
 
 int main()
 {
-		//コンソールをUTF-8にする設定
-	system("chcp 65001 > nul");
+    // コンソールをUTF-8にする設定
+    system("chcp 65001 > nul");
 
-	int salary = 100;
-	int fixed = 1226;
-	int hour = 0;
-	int resullt1 = Recursive(salary, hour, fixed);
+    srand(( unsigned ) time(NULL));
 
-	return 0;
+    int userInput = -1;
+
+    while ( userInput != 0 && userInput != 1 )
+    {
+        printf("Pick a number from 0 to 1: ");
+        scanf_s("%d", &userInput);
+
+        if ( userInput != 0 && userInput != 1 )
+        {
+            printf("Invalid.\n");
+        } else
+        {
+            printf("Results In.\n");
+            break;
+        }
+    }
+
+    int roll = rand() % 6 + 1;
+
+    // ラムダ式で結果を表示する
+    DelayReveal([] (int roll, int userGuess)
+    {
+        if ( roll % 2 == 1 )
+        {
+            printf("Face %d is odd number\n", roll);
+        } else
+        {
+            printf("Face %d is even number\n", roll);
+        }
+
+        if ( ( userGuess == 0 && roll % 2 == 0 ) ||
+            ( userGuess == 1 && roll % 2 == 1 ) )
+        {
+            printf("correct");
+        } else
+        {
+            printf("incorrect");
+        }
+
+    }, 3000, roll, userInput);
+
+    return 0;
 }
