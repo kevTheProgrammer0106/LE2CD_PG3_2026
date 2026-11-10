@@ -1,44 +1,79 @@
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <list>
-#include <memory>
 
-template <typename DataType>
-DataType Add(DataType a, DataType b)
-{
-    return static_cast< DataType >( a + b );
-}
-
-class Enemy
+// インターフェース
+class IShape
 {
 public:
-    virtual ~Enemy() = default;
+    virtual ~IShape() = default;
 
-    virtual void Attack()
-    {
-        finalDamage = Add<int>(damage * 1.5, damage);
-    }
-
-    int GetFinalDamage() const
-    {
-        return finalDamage;
-    }
-
-protected:
-    int damage = 50;
-    int finalDamage = 0;
+    virtual void Size() = 0;
+    virtual void Draw() = 0;
 };
 
-class EnemyMini : public Enemy
+// 円
+class Circle : public IShape
 {
 public:
-    void Attack() override
+    void Size() override
     {
-        finalDamage = Add<int>(damage * 1.2, damageElemental);
+        printf("Circleの半径を入力: ");
+        scanf_s("%d", &radius);
     }
 
-protected:
-    int damageElemental = 5;
+    void Draw() override
+    {
+        // 円の形をコンソールに描画する
+        for ( int y = -radius; y <= radius; ++y )
+        {
+            for ( int x = -radius * 2; x <= radius * 2; ++x )
+            {
+                if ( x * x + 4 * y * y <= 4 * radius * radius )
+                {
+                    printf("*");
+                } else
+                {
+                    printf(" ");
+                }
+            }
+            printf("\n");
+        }
+    }
+
+private:
+    int radius = 3;
+};
+
+// 四角形
+class Rectangle : public IShape
+{
+public:
+    void Size() override
+    {
+        printf("Rectangleの幅を入力: ");
+        scanf_s("%d", &width);
+
+        printf("Rectangleの高さを入力: ");
+        scanf_s("%d", &height);
+    }
+
+    void Draw() override
+    {
+        // 幅と高さに合わせて四角形を描画する
+        for ( int y = 0; y < height; ++y )
+        {
+            for ( int x = 0; x < width; ++x )
+            {
+                printf("*");
+            }
+            printf("\n");
+        }
+    }
+
+private:
+    int width = 5;
+    int height = 3;
 };
 
 int main()
@@ -46,30 +81,28 @@ int main()
     // コンソールをUTF-8にする設定
     system("chcp 65001 > nul");
 
-    std::list<std::unique_ptr<Enemy>> enemies;
+    Circle circle;
+    Rectangle rectangle;
 
-    const int maxEnemyCount = 9;
+    // インターフェースを通して図形を管理する
+    IShape* shapes[] = { &circle, &rectangle };
 
-    for ( int index = 0; index < maxEnemyCount; ++index )
+    printf("===== オブジェクトのサイズ設定 =====\n");
+
+    // それぞれの図形のサイズを設定する
+    for ( IShape* shape : shapes )
     {
-        std::unique_ptr<Enemy> enemy;
+        shape->Size();
+        printf("\n");
+    }
 
-        // 指定されたインデックスならEnemyMiniを生成
-        if ( index == 3 || index == 5 )
-        {
-            enemy = std::make_unique<EnemyMini>();
-        } else
-        {
-            enemy = std::make_unique<Enemy>();
-        }
+    printf("===== オブジェクトの描画 =====\n");
 
-        // 敵の生成時に攻撃する
-        enemy->Attack();
-
-        printf("敵の[%d]番 TruEダメージ: %d\n",
-            index, enemy->GetFinalDamage());
-
-        enemies.push_back(std::move(enemy));
+    // それぞれの図形を描画する
+    for ( IShape* shape : shapes )
+    {
+        shape->Draw();
+        printf("\n");
     }
 
     return 0;
