@@ -1,35 +1,76 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <list>
+#include <memory>
 
-template <typename Type>
-Type Min(Type a, Type b)
+template <typename DataType>
+DataType Add(DataType a, DataType b)
 {
-    // 2つの値を比較して、小さい方を返す
-    return ( a < b ) ? a : b;
+    return static_cast< DataType >( a + b );
 }
+
+class Enemy
+{
+public:
+    virtual ~Enemy() = default;
+
+    virtual void Attack()
+    {
+        finalDamage = Add<int>(damage * 1.5, damage);
+    }
+
+    int GetFinalDamage() const
+    {
+        return finalDamage;
+    }
+
+protected:
+    int damage = 50;
+    int finalDamage = 0;
+};
+
+class EnemyMini : public Enemy
+{
+public:
+    void Attack() override
+    {
+        finalDamage = Add<int>(damage * 1.2, damageElemental);
+    }
+
+protected:
+    int damageElemental = 5;
+};
 
 int main()
 {
     // コンソールをUTF-8にする設定
     system("chcp 65001 > nul");
 
-    int numberInt = 4;
-    float numberFloat = 4.5f;
-    double numberDouble = 3.6;
+    std::list<std::unique_ptr<Enemy>> enemies;
 
-    printf("===== Minimum Comparison =====\n");
+    const int maxEnemyCount = 9;
 
-    // int型の比較
-    printf("Min<int>(4, 5) = %d\n",
-        Min<int>(numberInt, 5));
+    for ( int index = 0; index < maxEnemyCount; ++index )
+    {
+        std::unique_ptr<Enemy> enemy;
 
-    // float型の比較
-    printf("Min<float>(4.5, 1.5) = %.1f\n",
-        Min<float>(numberFloat, 1.5f));
+        // 指定されたインデックスならEnemyMiniを生成
+        if ( index == 3 || index == 5 )
+        {
+            enemy = std::make_unique<EnemyMini>();
+        } else
+        {
+            enemy = std::make_unique<Enemy>();
+        }
 
-    // double型の比較
-    printf("Min<double>(3.6, 2.0) = %.1f\n",
-        Min<double>(numberDouble, 2.0));
+        // 敵の生成時に攻撃する
+        enemy->Attack();
+
+        printf("敵の[%d]番 TruEダメージ: %d\n",
+            index, enemy->GetFinalDamage());
+
+        enemies.push_back(std::move(enemy));
+    }
 
     return 0;
 }
