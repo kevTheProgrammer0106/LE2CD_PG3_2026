@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstring>
 #include <numbers>
+#include <limits>
 
 #include "CollisionDetection.h"
 #include "MatrixFunc.h"
@@ -68,14 +69,14 @@ Quaternion Conjugate(const Quaternion& q) { return {-q.x, -q.y, -q.z, q.w}; }
 Quaternion IdentityQuaternion() { return {0.0f, 0.0f, 0.0f, 1.0f}; }
 
 // Quaternionのノルム（大きさ）を返す
-float Norm(const Quaternion& quaternion) { return std::sqrt(quaternion.x * quaternion.x + quaternion.y * quaternion.y + quaternion.z * quaternion.z + quaternion.w * quaternion.w); }
+float Norm(const Quaternion& quaternion) { return std::sqrtf(quaternion.x * quaternion.x + quaternion.y * quaternion.y + quaternion.z * quaternion.z + quaternion.w * quaternion.w); }
 
 // Quaternionを正規化する
 Quaternion Normalize(const Quaternion& quaternion) {
 	float norm = Norm(quaternion);
 
 	// ゼロ除算を防ぐ
-	if (norm == 0.0f) {
+	if (norm <= std::numeric_limits<float>::epsilon()) {
 		return IdentityQuaternion();
 	}
 
@@ -173,6 +174,64 @@ void QuaternionScreenPrint(int x, int y, const Quaternion& quaternion, const cha
 	Novice::ScreenPrintf(x + kColumnWidth * 5, y, "%s", label);
 }
 
+
+// あるベクトルと直交する単位ベクトルを求める
+Vector3 MakeOrthogonalVector(const Vector3& v) {
+	Vector3 reference;
+
+	if (std::abs(v.x) <= std::abs(v.y) && std::abs(v.x) <= std::abs(v.z)) {
+		reference = {1.0f, 0.0f, 0.0f};
+	} else if (std::abs(v.y) < std::abs(v.z)) {
+		reference = {0.0f, 1.0f, 0.0f};
+	} else {
+		reference = {0.0f, 0.0f, 1.0f};
+	}
+
+	Vector3 result = Cross(v, reference);
+
+	return Normalize(result);
+}
+
+// 方向ベクトルから方向ベクトルへの回転Quaternionを求める
+Quaternion DirectionToDirectionQuaternion(const Vector3& from, const Vector3& to) {
+	// 方向ベクトルを正規化
+	Vector3 fromNormalized = Normalize(from);
+	Vector3 toNormalized = Normalize(to);
+
+	// 内積から回転角度を求める
+	float dotProduct = fromNormalized.x * toNormalized.x + fromNormalized.y * toNormalized.y + fromNormalized.z * toNormalized.z;
+
+	// 浮動小数点誤差を防ぐ
+	dotProduct = std::clamp(dotProduct, -1.0f, 1.0f);
+
+	// 同じ方向なら単位Quaternionを返す
+	if (dotProduct >= 1.0f - 0.000001f) {
+		return IdentityQuaternion();
+	}
+
+	// 正反対の方向なら直交する回転軸を使う
+	if (dotProduct <= -1.0f + 0.000001f) {
+		Vector3 orthogonalAxis = MakeOrthogonalVector(fromNormalized);
+
+		return MakeRotateAxisAngleQuaternion(orthogonalAxis, std::numbers::pi_v<float>);
+	}
+
+	// 外積から回転軸を求める
+	Vector3 rotationAxis = Cross(fromNormalized, toNormalized);
+
+	// 内積から回転角度を求める
+	float rotationAngle = std::acos(dotProduct);
+
+	return MakeRotateAxisAngleQuaternion(rotationAxis, rotationAngle);
+}
+
+// 方向ベクトルから方向ベクトルへの回転Matrix4x4を求める
+Matrix4x4 DirectionToDirectionMatrix(const Vector3& from, const Vector3& to) {
+	// Quaternionから回転行列へ変換
+	Quaternion quaternion = DirectionToDirectionQuaternion(from, to);
+
+	return MakeRotateMatrix(quaternion);
+}
 const char kWindowTitle[] = "LE2C_29_メンドーザ_ケビン_ラルフ_パレルモ";
 
 // Windowsアプリでのエントリーポイント(main関数)
@@ -198,11 +257,13 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		/// ↓更新処理ここから
 		///
 
-		Quaternion rotation = MakeRotateAxisAngleQuaternion(Normalize(Vector3{1.0f, 0.4f, -0.2f}), 0.45f);
-		Vector3 pointY = {2.1f, -0.9f, 1.3f};
-		Matrix4x4 rotateMatrix = MakeRotateMatrix(rotation);
-		Vector3 rotateByQuaternion = RotateVector(pointY, rotation);
-		Vector3 rotateByMatrix = Transform(pointY, rotateMatrix);
+Vector3 from0 = Normalize(Vector3{1.0f, 0.7f, 0.5f});
+Vector3 to0 = -from0;
+Vector3 from1 = Normalize(Vector3{-0.6f, 0.9f, 0.2f});
+Vector3 to1 = Normalize(Vector3{0.4f, 0.7f, -0.5f});
+Matrix4x4 rotationMatrix0 = DirectionToDirectionMatrix(Normalize(Vector3{1.0f, 0.0f, 0.0f}), Normalize(Vector3{-1.0f, 0.0f, 0.0f}));
+Matrix4x4 rotationMatrix1 = DirectionToDirectionMatrix(from0, to0);
+Matrix4x4 rotationMatrix2 = DirectionToDirectionMatrix(from1, to1);
 
 		///
 		/// ↑更新処理ここまで
@@ -212,10 +273,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		/// ↓描画処理ここから
 		///
 
-		QuaternionScreenPrint(0, kRowHeight * 0, rotation, " : rotation");
-		MatrixScreenPrint(0, kRowHeight * 1, rotateMatrix, "rotateMatrix");
-		VectorScreenPrint(0, kRowHeight * 6, rotateByQuaternion, " : rotateByQuaternion");
-		VectorScreenPrint(0, kRowHeight * 7, rotateByMatrix, " : rotateByMatrix");
+MatrixScreenPrint(0, 0, rotationMatrix0, "rotationMatrix0");
+MatrixScreenPrint(0, kRowHeight * 5, rotationMatrix1, "rotationMatrix1");
+MatrixScreenPrint(0, kRowHeight * 10, rotationMatrix2, "rotationMatrix2");
 
 
 		///
