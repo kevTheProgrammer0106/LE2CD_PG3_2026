@@ -1,109 +1,59 @@
-
 #include <stdio.h>
-#include <stdlib.h>
 
-// インターフェース
-class IShape
+template <typename Type1, typename Type2>
+class Minimum
 {
-public:
-    virtual ~IShape() = default;
-
-    virtual void Size() = 0;
-    virtual void Draw() = 0;
-};
-
-// 円
-class Circle : public IShape
-{
-public:
-    void Size() override
-    {
-        printf("Circleの半径を入力: ");
-        scanf_s("%d", &radius);
-    }
-
-    void Draw() override
-    {
-        // 円の形をコンソールに描画する
-        for ( int y = -radius; y <= radius; ++y )
-        {
-            for ( int x = -radius * 2; x <= radius * 2; ++x )
-            {
-                if ( x * x + 4 * y * y <= 4 * radius * radius )
-                {
-                    printf("*");
-                } else
-                {
-                    printf(" ");
-                }
-            }
-            printf("\n");
-        }
-    }
-
 private:
-    int radius = 3;
-};
+    Type1 value1_;
+    Type2 value2_;
 
-// 四角形
-class Rectangle : public IShape
-{
 public:
-    void Size() override
+    // 2つの値を受け取るコンストラクタ
+    Minimum(Type1 a, Type2 b)
+        : value1_(a), value2_(b)
     {
-        printf("Rectangleの幅を入力: ");
-        scanf_s("%d", &width);
-
-        printf("Rectangleの高さを入力: ");
-        scanf_s("%d", &height);
     }
 
-    void Draw() override
+    // 2つの値を比較して、小さい方を返す
+    auto Min() const
     {
-        // 幅と高さに合わせて四角形を描画する
-        for ( int y = 0; y < height; ++y )
-        {
-            for ( int x = 0; x < width; ++x )
-            {
-                printf("*");
-            }
-            printf("\n");
-        }
+        return ( value1_ < value2_ ) ? value1_ : value2_;
     }
-
-private:
-    int width = 5;
-    int height = 3;
 };
 
 int main()
 {
-    // コンソールをUTF-8にする設定
-    system("chcp 65001 > nul");
+    printf("===== Minimum Comparison =====\n");
 
-    Circle circle;
-    Rectangle rectangle;
+    // int型同士
+    Minimum<int, int> minimumIntInt(4, 5);
+    printf("Min<int, int>(4, 5) = %g\n",
+        static_cast< double >( minimumIntInt.Min() ));
 
-    // インターフェースを通して図形を管理する
-    IShape* shapes[] = { &circle, &rectangle };
+    // int型とfloat型
+    Minimum<int, float> minimumIntFloat(4, 1.5f);
+    printf("Min<int, float>(4, 1.5) = %g\n",
+        static_cast< double >( minimumIntFloat.Min() ));
 
-    printf("===== オブジェクトのサイズ設定 =====\n");
+    // int型とdouble型
+    Minimum<int, double> minimumIntDouble(4, 2.0);
+    printf("Min<int, double>(4, 2.0) = %g\n",
+        minimumIntDouble.Min());
 
-    // それぞれの図形のサイズを設定する
-    for ( IShape* shape : shapes )
-    {
-        shape->Size();
-        printf("\n");
-    }
+    // float型同士
+    Minimum<float, float> minimumFloatFloat(4.5f, 1.5f);
+    printf("Min<float, float>(4.5, 1.5) = %g\n",
+        static_cast< double >( minimumFloatFloat.Min() ));
 
-    printf("===== オブジェクトの描画 =====\n");
+    // float型とdouble型
+    Minimum<float, double> minimumFloatDouble(4.5f, 2.0);
+    printf("Min<float, double>(4.5, 2.0) = %g\n",
+        minimumFloatDouble.Min());
 
-    // それぞれの図形を描画する
-    for ( IShape* shape : shapes )
-    {
-        shape->Draw();
-        printf("\n");
-    }
+    // double型同士
+    Minimum<double, double> minimumDoubleDouble(3.6, 2.0);
+    printf("Min<double, double>(3.6, 2.0) = %g\n",
+        minimumDoubleDouble.Min());
 
     return 0;
 }
