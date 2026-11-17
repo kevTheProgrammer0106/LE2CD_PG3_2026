@@ -232,6 +232,46 @@ Matrix4x4 DirectionToDirectionMatrix(const Vector3& from, const Vector3& to) {
 
 	return MakeRotateMatrix(quaternion);
 }
+
+Quaternion Slerp(const Quaternion& q0, const Quaternion& q1, float t) {
+	// Quaternionを正規化
+	Quaternion q0Normalized = Normalize(q0);
+	Quaternion q1Normalized = Normalize(q1);
+	// 内積を計算
+	float dotProduct = q0Normalized.x * q1Normalized.x + q0Normalized.y * q1Normalized.y + q0Normalized.z * q1Normalized.z + q0Normalized.w * q1Normalized.w;
+	// 内積が負の場合、q1を反転させる
+	if (dotProduct < 0.0f) {
+		q1Normalized.x = -q1Normalized.x;
+		q1Normalized.y = -q1Normalized.y;
+		q1Normalized.z = -q1Normalized.z;
+		q1Normalized.w = -q1Normalized.w;
+		dotProduct = -dotProduct;
+	}
+	// 内積がほぼ1の場合、線形補間を使用
+	if (dotProduct > 0.9995f) {
+		return Normalize({
+		    q0Normalized.x + t * (q1Normalized.x - q0Normalized.x),
+		    q0Normalized.y + t * (q1Normalized.y - q0Normalized.y),
+		    q0Normalized.z + t * (q1Normalized.z - q0Normalized.z),
+		    q0Normalized.w + t * (q1Normalized.w - q0Normalized.w),
+		});
+	}
+	// 角度を計算
+	float theta_0 = std::acos(dotProduct);
+	float theta = theta_0 * t;
+	// sin(theta)の値を計算
+	float sin_theta = std::sin(theta);
+	float sin_theta_0 = std::sin(theta_0);
+	float s0 = std::cos(theta) - dotProduct * sin_theta / sin_theta_0;
+	float s1 = sin_theta / sin_theta_0;
+	return {
+	    s0 * q0Normalized.x + s1 * q1Normalized.x,
+	    s0 * q0Normalized.y + s1 * q1Normalized.y,
+	    s0 * q0Normalized.z + s1 * q1Normalized.z,
+	    s0 * q0Normalized.w + s1 * q1Normalized.w,
+	};
+}
+
 const char kWindowTitle[] = "LE2C_29_メンドーザ_ケビン_ラルフ_パレルモ";
 
 // Windowsアプリでのエントリーポイント(main関数)
@@ -256,14 +296,15 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		///
 		/// ↓更新処理ここから
 		///
+	
+		Quaternion rotation0 = MakeRotateAxisAngleQuaternion({0.71f, 0.71f, 0.0f}, 0.3f);
+		Quaternion rotation1 = MakeRotateAxisAngleQuaternion({0.71f, 0.0f, 0.71f}, 3.141592f);
 
-Vector3 from0 = Normalize(Vector3{1.0f, 0.7f, 0.5f});
-Vector3 to0 = -from0;
-Vector3 from1 = Normalize(Vector3{-0.6f, 0.9f, 0.2f});
-Vector3 to1 = Normalize(Vector3{0.4f, 0.7f, -0.5f});
-Matrix4x4 rotationMatrix0 = DirectionToDirectionMatrix(Normalize(Vector3{1.0f, 0.0f, 0.0f}), Normalize(Vector3{-1.0f, 0.0f, 0.0f}));
-Matrix4x4 rotationMatrix1 = DirectionToDirectionMatrix(from0, to0);
-Matrix4x4 rotationMatrix2 = DirectionToDirectionMatrix(from1, to1);
+		Quaternion interpolate0 = Slerp(rotation0, rotation1, 0.0f);
+		Quaternion interpolate1 = Slerp(rotation0, rotation1, 0.3f);
+		Quaternion interpolate2 = Slerp(rotation0, rotation1, 0.5f);
+		Quaternion interpolate3 = Slerp(rotation0, rotation1, 0.7f);
+		Quaternion interpolate4 = Slerp(rotation0, rotation1, 1.0f);
 
 		///
 		/// ↑更新処理ここまで
@@ -273,10 +314,17 @@ Matrix4x4 rotationMatrix2 = DirectionToDirectionMatrix(from1, to1);
 		/// ↓描画処理ここから
 		///
 
-MatrixScreenPrint(0, 0, rotationMatrix0, "rotationMatrix0");
-MatrixScreenPrint(0, kRowHeight * 5, rotationMatrix1, "rotationMatrix1");
-MatrixScreenPrint(0, kRowHeight * 10, rotationMatrix2, "rotationMatrix2");
 
+		// 元のQuaternion
+		QuaternionScreenPrint(0, kRowHeight * 0, rotation0, "rotation0");
+		QuaternionScreenPrint(0, kRowHeight * 1, rotation1, "rotation1");
+
+		// Slerpによる補間結果
+		QuaternionScreenPrint(0, kRowHeight * 3, interpolate0, "interpolate0 (t = 0.0)");
+		QuaternionScreenPrint(0, kRowHeight * 4, interpolate1, "interpolate1 (t = 0.3)");
+		QuaternionScreenPrint(0, kRowHeight * 5, interpolate2, "interpolate2 (t = 0.5)");
+		QuaternionScreenPrint(0, kRowHeight * 6, interpolate3, "interpolate3 (t = 0.7)");
+		QuaternionScreenPrint(0, kRowHeight * 7, interpolate4, "interpolate4 (t = 1.0)");
 
 		///
 		/// ↑描画処理ここまで
